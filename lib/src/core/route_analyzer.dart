@@ -9,6 +9,7 @@ import '../route_info.dart';
 class RouteAnalyzer {
   Future<List<RouteInfo>> analyze(String pagesDirectory) async {
     final routes = <RouteInfo>[];
+    final packageName = await _getPackageName();
 
     // Add safety check for directory existence
     final dir = Directory(pagesDirectory);
@@ -81,7 +82,9 @@ class RouteAnalyzer {
               final relativePath =
                   p.relative(entity.path, from: pagesDirectory);
               final routePath = _filePathToRoutePath(relativePath);
-              final importPath = p.relative(entity.path, from: 'lib');
+              final pathFromLib = p.relative(entity.path, from: 'lib');
+              final importPath =
+                  'package:$packageName/${pathFromLib.replaceAll('\\', '/')}';
 
               // Convert constructor params to RouteParameter list
               final parameters = visitor.constructorParams.entries
@@ -93,7 +96,7 @@ class RouteAnalyzer {
                 routePath: routePath,
                 className: visitor.className!,
                 parameters: parameters,
-                importPath: importPath.replaceAll('\\', '/'),
+                importPath: importPath,
               ));
               print('✅ Analyzed: ${visitor.className} -> $routePath');
             } on Exception catch (routeCreationError) {
@@ -129,6 +132,27 @@ class RouteAnalyzer {
 
     print('📋 Total routes found: ${routes.length}');
     return routes;
+  }
+
+  Future<String> _getPackageName() async {
+    final pubspecFile = File('pubspec.yaml');
+    if (!await pubspecFile.exists()) {
+      print(
+          '⚠️ Warning: pubspec.yaml not found. Run the generator from your project root.');
+      return 'your_app_name'; // Fallback
+    }
+    try {
+      final lines = await pubspecFile.readAsLines();
+      for (final line in lines) {
+        if (line.startsWith('name:')) {
+          return line.substring(5).trim();
+        }
+      }
+    } catch (e) {
+      print('⚠️ Warning: Could not read or parse pubspec.yaml: $e');
+    }
+    print('⚠️ Warning: Could not find "name" in pubspec.yaml.');
+    return 'your_app_name'; // Fallback
   }
 
   String _filePathToRoutePath(String filePath) {
