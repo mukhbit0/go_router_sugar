@@ -78,6 +78,7 @@ class CodeGenerator {
     buffer.writeln(
         '  /// Includes ${routes.length} route${routes.length == 1 ? '' : 's'} with full type safety and parameter validation.');
     buffer.writeln('  static final GoRouter router = GoRouter(');
+    buffer.writeln('    navigatorKey: Navigate._navigatorKey,');
     buffer.writeln("    initialLocation: '${config.initialRoute}',");
     buffer.writeln('    routes: [');
 
